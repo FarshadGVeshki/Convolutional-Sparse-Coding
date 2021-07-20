@@ -12,5 +12,7 @@ the codes include:
 7) code for visualizing multiscale filters: dict2image.m
 8) pre-learned dictionaries (.mat files)
 
+Training images are collected from USC-SIPI database.
+
 reference : FG Veshki, SA Vorobyov, Efficient ADMM-based Algorithms for Convolutional Sparse Coding
 Email: farshad.ghorbaniveshki@aalto.fi

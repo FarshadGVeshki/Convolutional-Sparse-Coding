@@ -1,0 +1,206 @@
+function [X,D, res] = CDL_mtx_inv(D, S, lamb, opts)
+% Algorithm for onvolutional dictionary learning (CDL) using matrix inversion 
+% (improved implementation of H. Bristow 2013)
+%
+% Inputs:
+% D:    initial dictionary of K filters of size m1 by m2
+% S:    P stacked image of size H by W (S is H by W by P)
+% lamb: l1-norm regularization parameter
+% opt:  optional parameters
+%
+% Outputs:
+% X:    sparse coefficient maps
+% D:    the learned dictionary
+% res: results (iterations details)
+%
+% Optional parameters:
+%
+% opts.MaxItr:  maximum number of iterations (default 500)
+% opts.csc_iters: number of internal csc step iterations (default 1) 
+% opts.cdl_iters: number of internal dict update step iterations (default 1) 
+% opts.rho: ADMM penalty parameter for csc step (default 10) 
+% opts.sig: ADMM penalty parameter for cdl step (default 10) 
+% opts.AutoRho: varying penalty parameter (ADMM extention) (default 1 (disabled))
+% opts.AutoSig: varying penalty parameter (ADMM extention) (default 1 (disabled))
+% opts.relaxParam: relaxation parameter (ADMM extention) (default 1.8)
+% opts.Xinit:   initial sparse codes (default zeros)
+% opts.Uinit:   initial lagrange variables (default zeros)
+% opts.Vinit:   initial lagrange variables (default zeros)
+% opts.dcfilter:    the first filter is DC filter and is kept unchanges (default 0)
+
+
+%% parameters
+[H,W,P] = size(S);
+[m1,m2,K] = size(D);
+S = reshape(S,[H W 1 P]);
+
+if nargin < 4
+    opts = [];
+end
+if ~isfield(opts,'MaxIter')
+    opts.MaxIter = 500;
+end
+if ~isfield(opts,'csc_iters')
+    opts.csc_iters = 1;
+end
+if ~isfield(opts,'cdl_iters')
+    opts.cdl_iters = 1;
+end
+if ~isfield(opts,'rho')
+    opts.rho = 10;
+end
+if ~isfield(opts,'sig')
+    opts.sig = 10;
+end
+if ~isfield(opts,'AutoRho')
+    opts.AutoRho = 0;
+end
+if ~isfield(opts,'AutoSig')
+    opts.AutoSig = 0;
+end
+if ~isfield(opts,'Xinit')
+    opts.Xinit = zeros(H,W,K,P,'single');
+end
+if ~isfield(opts,'Uinit')
+    opts.Uinit = zeros(H,W,K,P,'single');
+end
+if ~isfield(opts,'Vinit')
+    opts.Vinit = zeros(H,W,K,'single');
+end
+if ~isfield(opts,'relaxParam')
+    opts.relaxParam = 1.8;
+end
+if ~isfield(opts,'dcfilter')
+    opts.dcfilter = 0;
+end
+%% initialization
+Sf = fft2(S);
+X = opts.Xinit; 
+U = opts.Uinit;
+V = opts.Vinit;
+rho = opts.rho;
+sig = opts.sig;
+
+alpha = opts.relaxParam; 
+MaxIter = opts.MaxIter;
+csc_iters = opts.csc_iters;
+cdl_iters = opts.cdl_iters;
+
+res.iterinf = [];
+
+mu = 5; % varying rho parameter
+tau = 1.2; % varying rho parameter
+
+vec = @(x) x(:);
+itr = 1;
+
+%% CDL CYCLES
+tsrt = tic;
+D = padarray(D,[H-m1 W-m2],'post');
+Df = fft2(D);
+
+while itr<=MaxIter
+    %%% ADMM iterations
+    
+    %% CSC
+    for ttt = 1:csc_iters % default = 1
+        Xprv = X;
+        Z  = Z_update(fft2(X-U),Df,Sf,rho) ; % X update
+        Zr = alpha * Z + (1-alpha)*X; % relaxation
+        X = sfthrsh(Zr+U, lamb/rho); % Z update
+        U = Zr - X + U; % U update
+    end
+    
+    %% CDL
+    Xf = fft2(X);
+    for i = 1:H
+        for j = 1:W
+            ct = reshape(Xf(i,j,:,:),[K P]);
+            C(i,j,:,:) = ((conj(ct)*ct.' + rho*eye(K))\conj(ct)).';
+        end
+    end
+    
+    for ttt = 1:cdl_iters % default = 1
+        Dprv = D;
+        G = G_update(Xf,Sf,fft2(D-V),H,W,P,K,C);
+        Gr = alpha * G + (1-alpha)*D; % relaxation
+        D = D_proj(sum(Gr+V,4)/P,m1,m2,H,W); % projection on constraint set
+        if opts.dcfilter == 1
+            D(:,:,1) = Dprv(:,:,1);
+        end
+        V = Gr - D + V;        
+    end
+    %%
+    Df = fft2(D);
+    titer = toc(tsrt);
+    %%
+    
+    %_________________________residuals CSC_____________________________
+    nX = norm(Z(:)); nZ = norm(X(:)); nU = norm(U(:));
+    r_csc = norm(vec(Z-X))/(max(nX,nZ)); % primal residulal
+    s_csc = norm(vec(Xprv-X))/nU; % dual residual
+    
+    %_________________________residuals CDL_____________________________
+    nG = norm(G(:)); nD = norm(D(:))*sqrt(P); nV = norm(V(:));
+    r_cdl = norm(vec(G-D))/(max(nG,nD)); % primal residulal
+    s_cdl = (norm(vec(Dprv-D))/nV)*sqrt(P); % dual residual
+    
+    %_________________________rho update_____________________________
+    if opts.AutoRho && rem(itr,10)==0
+        [rho,U] = rho_update(rho,r_csc,s_csc,mu,tau,U);
+    end
+    
+    %_________________________sig update_____________________________
+    if opts.AutoSig && rem(itr,10)==0
+        [sig,V] = rho_update(sig,r_cdl,s_cdl,mu,tau,V);
+    end
+    
+    %_________________________progress_______________________________
+    rPow = sum(vec(abs(sum(Df.*fft2(X),3)-Sf).^2))/(2*H*W); % residual power
+    L1 = sum(abs(X(:))); % l1-norm
+    fval = rPow + lamb*L1; % functional value
+    res.iterinf = [res.iterinf; [itr fval rPow L1 r_csc s_csc r_cdl s_cdl rho sig titer]];
+    
+    
+    itr = itr+1;
+end
+D = D(1:m1,1:m2,:);
+end
+
+function y = sfthrsh(x, kappa) % shrinkage
+y = sign(x).*max(0, abs(x) - kappa);
+end
+
+function Z  = Z_update(Wf,Df,Sf,rho)
+C = conj(Df)./(sum(abs(Df).^2,3)+rho);
+Rf = Sf - sum(Wf.*Df,3); % residual update
+Zf = Wf + C.*Rf; % X update
+Z  = ifft2(Zf,'symmetric');
+end
+
+function G = G_update(Xf,Sf,Wf,H,W,P,K,C)
+Rf = reshape(Sf,[H,W,P]) - reshape(sum(Wf.*Xf,3),[H,W,P]);
+Gf = Wf + reshape(sum(Rf.*C,3),[H,W,K]);
+G = ifft2(Gf,'symmetric');
+end
+
+function D = D_proj(D,m1,m2,H,W) % projection on unit ball
+D = padarray(D(1:m1,1:m2,:,:),[H-m1 W-m2],'post');
+D  = D./max(sqrt(sum(D.^2,1:2)),0);
+end
+
+
+function [rho,U] = rho_update(rho,r,s,mu,tau,U)
+a = 1;
+if r > mu*s
+    a = tau;
+end
+if s > mu*r
+    a = 1/tau;
+end
+rho_ = a*rho;
+if rho_>1e-4
+    rho = rho_;
+    U = U/a;
+end
+end

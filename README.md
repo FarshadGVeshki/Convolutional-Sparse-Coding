@@ -13,3 +13,4 @@ the codes include:
 8) pre-leaned dictionaries (.mat files)
 
 reference : FG Veshki, SA Vorobyov, Efficient ADMM-based Algorithms for Convolutional Sparse Coding
+Email: farshad.ghorbaniveshki@aalto.fi

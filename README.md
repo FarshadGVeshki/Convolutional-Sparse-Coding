@@ -1,5 +1,5 @@
 # Convolutional-Sparse-Coding
-Run the demo files
+Run the demo files.
 
 the codes include:
 

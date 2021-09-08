@@ -14,5 +14,5 @@ the codes include:
 
 Training images are collected from USC-SIPI database.
 
-reference : FG Veshki, SA Vorobyov, Efficient ADMM-based Algorithms for Convolutional Sparse Coding
+reference : FG Veshki, SA Vorobyov, Efficient ADMM-based Algorithms for Convolutional Sparse Coding, 2021, arXiv:2109.02969
 Email: farshad.ghorbaniveshki@aalto.fi

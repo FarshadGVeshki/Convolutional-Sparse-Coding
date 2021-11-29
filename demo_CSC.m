@@ -25,3 +25,15 @@ semilogy(Res.iterinf(:,end),Res.iterinf(:,2))
 xlabel('time')
 ylabel('fval')
 grid on
+
+%% reconstruction
+
+S_rec = ifft2(sum(fft2(D,size(X,1),size(X,2)).*fft2(X),3),'symmetric') + Smean;
+
+figure(2)
+subplot(121)
+imshow(S,[])
+title('Original')
+subplot(122)
+imshow(S_rec, [])
+title('Reconstructed')

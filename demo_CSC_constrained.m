@@ -46,3 +46,18 @@ fprintf('%s %10s %10s %10s \n', 'Unconstrained',num2str(L1_uncons),num2str(Err_u
 fprintf('%s %12s %10s %10s \n', 'Constrained',num2str(L1_cons),num2str(Err_cons),num2str(rt_cons))
 
 
+%% reconstruction
+
+S_rec_cons = ifft2(sum(fft2(D,size(X_cons,1),size(X_cons,2)).*fft2(X_cons),3),'symmetric') + Smean;
+S_rec_uncons = ifft2(sum(fft2(D,size(X,1),size(X,2)).*fft2(X),3),'symmetric') + Smean;
+
+figure(2)
+subplot(131)
+imshow(S,[])
+title('Original')
+subplot(132)
+imshow(S_rec_cons, [])
+title('Reconstructed (constrained)')
+subplot(133)
+imshow(S_rec_uncons, [])
+title('Reconstructed (unconstrained)')

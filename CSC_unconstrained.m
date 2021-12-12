@@ -1,4 +1,4 @@
-function [Z, res] = CSC_unconstrained(D, S, lamb, opts)
+function [X, res] = CSC_unconstrained(D, S, lamb, opts)
 % Efficient algorithm for unconstrained convolutional sparse coding (CSC)
 %
 % Inputs:

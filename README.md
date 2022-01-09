@@ -1,7 +1,7 @@
 # Convolutional-Sparse-Coding
 Run the demo files.
 
-the codes include:
+The codes include:
 
 1) unconstraned CSC algorithm: CSC_unconstrained.m
 2) constraned CSC algorithm: CSC_constrained.m
@@ -14,5 +14,5 @@ the codes include:
 
 Training images are collected from USC-SIPI database.
 
-reference : FG Veshki, SA Vorobyov, Efficient ADMM-based Algorithms for Convolutional Sparse Coding, 2021, arXiv:2109.02969
+Reference : F. G. Veshki and S. A. Vorobyov, "Efficient ADMM-based Algorithms for Convolutional Sparse Coding," in IEEE Signal Processing Letters, doi: 10.1109/LSP.2021.3135196.
 Email: farshad.ghorbaniveshki@aalto.fi

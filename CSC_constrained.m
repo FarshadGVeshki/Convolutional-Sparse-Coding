@@ -91,7 +91,7 @@ nu = 1;
 while itr <= MaxIter && (r > epri || s > edua)
     
     %_________________________Z update______________________________
-    [Z, nitr_bisec]  = Z_update(fft2(X-U),Df,Sf,SDD,nu,Eps,H*W) ;
+    [Z, nu, nitr_bisec]  = Z_update(fft2(X-U),Df,Sf,SDD,nu,Eps,H*W) ;
     Zr = alpha *Z + (1-alpha)*X;
     
     %_________________________X update______________________________
@@ -149,7 +149,7 @@ end
 
 end
 
-function [Z, nitr_bs]  = Z_update(Wf,Df,Sf,SDD,nu,Eps,N)
+function [Z, nu, nitr_bs]  = Z_update(Wf,Df,Sf,SDD,nu,Eps,N)
 Rf = Sf - sum(Wf.*Df,3); % residual update
 nR = norm(Rf(:))/sqrt(N);
 

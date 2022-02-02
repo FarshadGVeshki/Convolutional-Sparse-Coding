@@ -154,7 +154,8 @@ Rf = Sf - sum(Wf.*Df,3); % residual update
 nR = norm(Rf(:))/sqrt(N);
 
 if nR<sqrt(Eps)
-    Z = W;
+    Z = ifft2(Wf,'symmetric');
+    nitr_bs = 0;
 else
     [nu, nitr_bs] = Bisection(nu,Rf,SDD,Eps*N,N,100);
     Zf = Wf + (conj(Df)./(SDD+nu)).*Rf; % Z update

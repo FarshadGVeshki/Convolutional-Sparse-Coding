@@ -26,7 +26,7 @@ function [X, res] = CSC_constrained(D, S, Eps, opts)
 % reference: 
 %
 % Farsad G. Veshki and Sergiy Vorobyov. Efficient ADMM-based Algorithms for
-% Convolutional Sparse Coding. 2021
+% Convolutional Sparse Coding, IEEE Signal Processing Letters, 2021
 %% parameters
 [H,W] = size(S);
 K = size(D,3);

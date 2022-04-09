@@ -22,7 +22,7 @@ D0 = initdict(Mls,Kls,0);
 
 %% CDL
 lamb = 0.05;
-opt.MaxIter = 300;
+opt.MaxIter = 200;
 [~,D,Res] = CDL_multiscale(D0,Sh,lamb,Kls,Mls,opt);
 
 % save('dict_multiscale','D')

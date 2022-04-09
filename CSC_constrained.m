@@ -41,10 +41,10 @@ if ~isfield(opts,'rho')
     opts.rho = 10;
 end
 if ~isfield(opts,'eAbs')
-    opts.eAbs = 1e-3;
+    opts.eAbs = 1e-4;
 end
 if ~isfield(opts,'eRel')
-    opts.eRel = 1e-3;
+    opts.eRel = 1e-4;
 end
 if ~isfield(opts,'Xinit')
     opts.Xinit = zeros(H,W,K);
@@ -59,7 +59,7 @@ if ~isfield(opts,'relaxParam')
     opts.relaxParam = 1.8;
 end
 if ~isfield(opts,'AutoRho')
-    opts.AutoRho = 0;
+    opts.AutoRho = 1;
 end
 
 %% initialization
@@ -69,9 +69,11 @@ X = opts.Xinit; % sparse code
 U = opts.Uinit; % scaled dual variable
 rho = opts.rho;
 lamb = opts.lamb;
-
-epri = opts.eAbs;
-edua = opts.eAbs;
+Nx = numel(X);
+eAbs = opts.eAbs;
+eRel = opts.eRel;
+epri = 0;
+edua = 0;
 
 MaxIter = opts.MaxIter;
 r = inf; s = inf;
@@ -104,8 +106,10 @@ while itr <= MaxIter && (r > epri || s > edua)
     %_______________________________________________________________
     %_________________________residuals_____________________________
     nZ = norm(Z(:)); nX = norm(X(:)); nU = norm(U(:));
-    r = norm(vec(Z-X))/(max(nZ,nX)); % primal residulal
-    s = norm(vec(Xprv-X))/nU ; % dual residual
+    r = norm(vec(X-Z)); % primal residulal
+    s = rho*norm(vec(Xprv-X)); % dual residual
+    epri = sqrt(Nx)*eAbs+max(nX,nZ)*eRel;
+    edua = sqrt(Nx)*eAbs+rho*nU*eRel;
     
     titer = toc(tsrt);
     

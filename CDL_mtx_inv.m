@@ -38,7 +38,7 @@ if nargin < 4
     opts = [];
 end
 if ~isfield(opts,'MaxIter')
-    opts.MaxIter = 500;
+    opts.MaxIter = 200;
 end
 if ~isfield(opts,'csc_iters')
     opts.csc_iters = 1;
@@ -73,6 +73,12 @@ end
 if ~isfield(opts,'dcfilter')
     opts.dcfilter = 0;
 end
+if ~isfield(opts,'eAbs')
+    opts.eAbs = 1e-4;
+end
+if ~isfield(opts,'eRel')
+    opts.eRel = 1e-4;
+end
 %% initialization
 Sf = fft2(S);
 X = opts.Xinit; 
@@ -82,10 +88,19 @@ rho = opts.rho;
 sig = opts.sig;
 
 alpha = opts.relaxParam; 
+
+eAbs = opts.eAbs;
+eRel = opts.eRel;
+eprix = 0;
+eduax = 0;
+eprid = 0;
+eduad = 0;
+
 MaxIter = opts.MaxIter;
 csc_iters = opts.csc_iters;
 cdl_iters = opts.cdl_iters;
 
+r_csc = inf; s_csc = inf; r_cdl= inf; s_cdl = inf;
 res.iterinf = [];
 
 mu = 5; % varying rho parameter
@@ -98,8 +113,9 @@ itr = 1;
 tsrt = tic;
 D = padarray(D,[H-m1 W-m2],'post');
 Df = fft2(D);
-
-while itr<=MaxIter
+Nx = numel(X);
+Nd = numel(D);
+while itr<=MaxIter && (r_csc > eprix || s_csc > eduax || r_cdl > eprid || s_cdl > eduad)
     %%% ADMM iterations
     
     %% CSC
@@ -136,14 +152,18 @@ while itr<=MaxIter
     %%
     
     %_________________________residuals CSC_____________________________
-    nX = norm(Z(:)); nZ = norm(X(:)); nU = norm(U(:));
-    r_csc = norm(vec(Z-X))/(max(nX,nZ)); % primal residulal
-    s_csc = norm(vec(Xprv-X))/nU; % dual residual
+    nX = norm(X(:)); nZ = norm(Z(:)); nU = norm(U(:));
+    r_csc = norm(vec(Z-X)); % primal residulal
+    s_csc = rho*norm(vec(Xprv-X)); % dual residual
+    eprix = sqrt(Nx)*eAbs+max(nX,nZ)*eRel;
+    eduax = sqrt(Nx)*eAbs+rho*nU*eRel;
     
     %_________________________residuals CDL_____________________________
     nG = norm(G(:)); nD = norm(D(:))*sqrt(P); nV = norm(V(:));
-    r_cdl = norm(vec(G-D))/(max(nG,nD)); % primal residulal
-    s_cdl = (norm(vec(Dprv-D))/nV)*sqrt(P); % dual residual
+    r_cdl = norm(vec(G-D)); % primal residulal
+    s_cdl = sqrt(P)*sig*norm(vec(Dprv-D)); % dual residual
+    eprid = sqrt(Nd)*eAbs+max(nD,nG)*eRel;
+    eduad = sqrt(Nd)*eAbs+rho*nV*eRel;
     
     %_________________________rho update_____________________________
     if opts.AutoRho && rem(itr,10)==0

@@ -45,10 +45,10 @@ if ~isfield(opts,'AutoRho')
     opts.AutoRho = 1;
 end
 if ~isfield(opts,'eAbs')
-    opts.eAbs = 1e-3;
+    opts.eAbs = 1e-4;
 end
 if ~isfield(opts,'eRel')
-    opts.eRel = 1e-3;
+    opts.eRel = 1e-4;
 end
 if ~isfield(opts,'Xinit')
     opts.Xinit = zeros(H,W,K,P);
@@ -66,9 +66,11 @@ Sf = fft2(S);
 X = opts.Xinit; % sparse code
 U = opts.Uinit; % scaled dual variable
 rho = opts.rho;
+eAbs = opts.eAbs;
+eRel = opts.eRel;
+epri = 0;
+edua = 0;
 
-epri = opts.eAbs;
-edua = opts.eAbs;
 
 rho_flg = 0;
 MaxIter = opts.MaxIter;
@@ -86,6 +88,7 @@ tsrt = tic;
 Df = fft2(D,H,W);
 SDD = sum(abs(Df).^2,3);
 Cf = conj(Df)./(SDD+rho);
+Nx = numel(X);
 
 %% ADMM iterations
 while itr <= MaxIter && (r > epri || s > edua)
@@ -105,8 +108,10 @@ while itr <= MaxIter && (r > epri || s > edua)
     %_______________________________________________________________
     %_________________________residuals_____________________________
     nX = norm(X(:)); nZ = norm(Z(:)); nU = norm(U(:));
-    r = norm(vec(X-Z))/(max(nX,nZ)); % primal residulal
-    s = norm(vec(Xprv-X))/nU + 0/nU; % dual residual
+    r = norm(vec(X-Z)); % primal residulal
+    s = rho*norm(vec(Xprv-X)); % dual residual
+    epri = sqrt(Nx)*eAbs+max(nX,nZ)*eRel;
+    edua = sqrt(Nx)*eAbs+rho*nU*eRel;
     
     titer = toc(tsrt);
     

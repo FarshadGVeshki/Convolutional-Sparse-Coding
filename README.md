@@ -1,4 +1,6 @@
 # Convolutional-Sparse-Coding
+
+(Last update 9.4.2022: stopping criteria)
 Run the demo files.
 
 The codes include:

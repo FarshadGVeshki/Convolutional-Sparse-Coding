@@ -146,23 +146,20 @@ else
 end
 end
 
+
 function [rho,U,rho_flg] = rho_update(rho,r,s,mu,tau,U)
-rhomlt = sqrt(r/(s*mu));
-if rhomlt < 1, rhomlt = 1/rhomlt; end
-if rhomlt > 100, rhomlt = 100; end
-
 rsf = 1;
-if r > mu*tau*s, rsf = rhomlt; end
-if s > (tau/mu)*r, rsf = 1/rhomlt; end
-rhot = rsf*rho;
-if rsf ~= 1
-    rho_flg =  1;
-else
-    rho_flg =  0;
+rho_flg =  0;
+if r > mu*s, rsf = tau; end
+if s > mu*r, rsf = 1/tau; end
+if rsf~=1
+    rhot = rsf*rho;
+    if rhot>1e-4
+        rho = rhot;
+        U = U/rsf;
+        rho_flg = 1;
+    end
 end
-if rhot>1e-4
-    rho = rhot;
-    U = U/rsf;
 end
 
-end
+

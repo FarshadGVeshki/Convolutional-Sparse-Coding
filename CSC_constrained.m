@@ -137,21 +137,25 @@ function y = sfthrsh(x, kappa)
 y = sign(x).*max(0, abs(x) - kappa);
 end
 
+
 function [rho,U] = rho_update(rho,r,s,mu,tau,U)
-rhomlt = sqrt(r/(s*mu));
-if rhomlt < 1, rhomlt = 1/rhomlt; end
-if rhomlt > 100, rhomlt = 100; end 
-
-rsf = 1;
-if r > mu*tau*s, rsf = rhomlt; end
-if s > (tau/mu)*r, rsf = 1/rhomlt; end
-rhot = rsf*rho;
-if rhot>1e-4
-    rho = rhot;
-    U = U/rsf;
+% varying penalty parameter
+a = 1;
+if r > mu*s
+    a = tau;
+end
+if s > mu*r
+    a = 1/tau;
+end
+rho_ = a*rho;
+if rho_>1e-4
+    rho = rho_;
+    U = U/a;
+end
 end
 
-end
+
+
 
 function [Z, nu, nitr_bs]  = Z_update(Wf,Df,Sf,SDD,nu,Eps,N)
 Rf = Sf - sum(Wf.*Df,3); % residual update
